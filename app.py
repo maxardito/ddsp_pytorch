@@ -14,7 +14,11 @@ from logger import LogConfig
 
 dictConfig(LogConfig().dict())
 logger = logging.getLogger("ddsp-pytorch")
-
+# usage: logs to terminal
+#     logger.info("Dummy Info")
+#     logger.error("Dummy Error")
+#     logger.debug("Dummy Debug")
+#     logger.warning("Dummy Warning")
 
 # 2. Create app and model objects
 app = FastAPI()
