@@ -8,6 +8,14 @@ from preprocess import main as preprocess
 # from export import main as export
 import os
 
+from logging.config import dictConfig
+import logging
+from logger import LogConfig
+
+dictConfig(LogConfig().dict())
+logger = logging.getLogger("ddsp-pytorch")
+
+
 # 2. Create app and model objects
 app = FastAPI()
 
