@@ -38,7 +38,7 @@ def main():
 
     dataloader = torch.utils.data.DataLoader(
         dataset,
-        arts.BATCH,
+        args.BATCH,
         True,
         drop_last=True,
     )

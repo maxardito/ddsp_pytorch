@@ -13,3 +13,5 @@ tensorboard
 pynvim
 huggingface_hub
 datasets
+worldvocoder
+cython

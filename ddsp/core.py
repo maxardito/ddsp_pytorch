@@ -1,4 +1,5 @@
 import torch
+import worldvocoder as wv
 import torch.nn as nn
 import torch.fft as fft
 import numpy as np
@@ -75,6 +76,20 @@ def remove_above_nyquist(amplitudes, pitch, sampling_rate):
 
 def scale_function(x):
     return 2 * torch.sigmoid(x)**(math.log(10)) + 1e-7
+
+
+def extract_world_parameters(signal, sampling_rate, block_size):
+    # initialize vocoder
+    vocoder = wv.World()
+
+    # encode audio
+    dat = vocoder.encode(sampling_rate,
+                         signal,
+                         f0_method='harvest',
+                         fft_size=2048,
+                         frame_period=int(1000 * block_size / sampling_rate))
+
+    return dat
 
 
 def extract_loudness(signal, sampling_rate, block_size, n_fft=2048):
