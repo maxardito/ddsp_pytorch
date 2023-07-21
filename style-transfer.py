@@ -4,14 +4,14 @@ from scipy.io import wavfile
 import numpy as np
 
 # Parameters for pitch glissando
-duration = 3.0  # Duration in seconds
+duration = 0.5  # Duration in seconds
 sampling_rate = 44100  # Sampling rate (samples per second)
 num_samples = int(duration * sampling_rate)
 time = np.linspace(0, duration, num_samples)
 
 # Parameters for loudness contour
-attack_time = 0.2  # Attack time in seconds
-decay_time = 0.5  # Decay time in seconds
+attack_time = 0.5  # Attack time in seconds
+decay_time = 0.05  # Decay time in seconds
 
 # Generate pitch glissando
 start_pitch = 200  # Starting pitch in Hz
@@ -37,18 +37,19 @@ loudness = (loudness - np.min(loudness)) / (np.max(loudness) -
 pitch = torch.unsqueeze(torch.tensor(pitch), dim=1)
 loudness = torch.unsqueeze(torch.tensor(loudness), dim=1)
 
-loudness = torch.unsqueeze(loudness, dim=0)
+pitch = torch.unsqueeze(pitch.to(torch.float32), dim=0)
+loudness = torch.unsqueeze(loudness.to(torch.float32), dim=0)
 
-model = torch.jit.load("./grimes/ddsp_grimes_pretrained.ts")
+model = torch.jit.load("./export/grimes/ddsp_grimes_pretrained.ts")
 
-audio = model(pitch.to(torch.float), loudness.to(torch.float))
+audio = model(pitch, loudness)
 
 # Specify the sample rate and the file path
 sample_rate = 44100
 file_path = 'output.wav'
 
 # Scale the audio data to the appropriate range for the desired data type (e.g., int16)
-scaled_data = np.int16(audio.detach().numpy() *
+scaled_data = np.int16(audio.squeeze().detach().numpy() *
                        32767)  # Scale to the range of 16-bit signed integers
 
 # Write the WAV file
