@@ -1,10 +1,16 @@
 import numpy as np
+import torch
 
 def normalize(signal):
     if np.max(np.abs(signal)) is not 0.0:
         return signal / np.max(np.abs(signal))
     else:
         return signal
+    
+def vector2tensor(signal, dtype=torch.float32):
+    tmp = torch.unsqueeze(torch.tensor(signal), dim=1)
+    tmp = torch.unsqueeze(tmp.to(dtype), dim=0)
+    return tmp
 
 def generate_glissando():
     # Parameters for pitch glissando
