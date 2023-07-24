@@ -1,5 +1,11 @@
 import numpy as np
 
+def normalize(signal):
+    if np.max(np.abs(signal)) is not 0.0:
+        return signal / np.max(np.abs(signal))
+    else:
+        return signal
+
 def generate_glissando():
     # Parameters for pitch glissando
     duration = 0.5  # Duration in seconds
