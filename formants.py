@@ -24,7 +24,8 @@ def normalize(x):
         return x
 
 def source_filter_model(t, f0=130, formants=[400, 800]):
-    # source
+    sample_rate = 1/(t[1] - t[0])
+    # source 
     source = np.zeros(num_samples)
     fk = f0
     while fk < sample_rate/2:
@@ -44,6 +45,7 @@ def source_filter_model(t, f0=130, formants=[400, 800]):
     mixture_spectrum = filter_spectrum * source_spectrum
     mixture_spectrum = np.fft.fftshift(mixture_spectrum)
     mixture = np.real(np.fft.ifft(mixture_spectrum))
+    mixture = mixture[:len(t)]
 
     return mixture 
 
@@ -52,11 +54,40 @@ dur = 0.3
 num_samples = int(dur * sample_rate)
 t = np.linspace(0, dur, num_samples, False)
 
-# analysis 
+# source audio
+f0 = 130
+formants = [400]
+signal = source_filter_model(t, f0=f0, formants=formants)
 
-plt.subplot(2, 1, 1)
-plt.plot(mixture)
-plt.subplot(2, 1, 2)
-plt.plot(f, 20*np.log10(np.abs(source_spectrum)))
-plt.ylim([-100, 30])
+# analysis 
+T0 = 1/f0
+
+q0 = 1.18
+q1 = -0.09
+
+fft_size = len(signal)
+signal_spectrum = np.fft.fft(signal, fft_size)
+signal_spectrum = signal_spectrum[:(len(signal_spectrum)//2)]
+signal_power_spectrum = np.power(signal_spectrum, 2)
+signal_cepstrum = np.fft.ifft(np.log(signal_power_spectrum))
+quefrency = np.linspace(0, dur, len(signal_cepstrum), False)
+# quefrency = np.linspace(-dur/2, dur/2, num_samples, False)
+sinc_lifter = np.zeros(len(quefrency))
+
+j = 0
+for tau in quefrency:
+    if tau != 0:
+        sinc_lifter[j] = np.sin(np.pi * f0 * tau) / (np.pi * f0 * tau)
+    else:
+        sinc_lifter[j] = 0
+    j+=1
+
+cos_lifter = q0 + 2.0*q1*np.cos(2*np.pi * quefrency / T0)
+
+tmp = np.zeros(fft_size, dtype=np.complex128)
+tmp[:len(signal_spectrum)] = sinc_lifter * cos_lifter * signal_cepstrum
+tmp = np.fft.fftshift(tmp)
+estimation = np.exp(np.fft.fft(tmp))
+
+plt.plot(np.abs(estimation))
 plt.show()
