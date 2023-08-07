@@ -22,38 +22,37 @@ def normalize(x):
         return x / m
     else:
         return x
-    
+
+def source_filter_model(t, f0=130, formants=[400, 800]):
+    # source
+    source = np.zeros(num_samples)
+    fk = f0
+    while fk < sample_rate/2:
+        source += np.cos(2.0*np.pi*fk * t)
+        fk += f0
+
+    source *= sig.windows.hann(num_samples)
+
+    # filter
+    fft_size = (num_samples*2)-1
+    f = np.linspace(-sample_rate/2, sample_rate/2, fft_size, False)
+    filter_spectrum = np.zeros(fft_size)
+    for formant in formants:
+        filter_spectrum += gaussian(f, formant, 100)
+    source_spectrum = np.fft.fft(source, fft_size)
+    source_spectrum = np.fft.fftshift(source_spectrum)
+    mixture_spectrum = filter_spectrum * source_spectrum
+    mixture_spectrum = np.fft.fftshift(mixture_spectrum)
+    mixture = np.real(np.fft.ifft(mixture_spectrum))
+
+    return mixture 
 
 sample_rate = 16000
-dur = 1
+dur = 0.3
 num_samples = int(dur * sample_rate)
 t = np.linspace(0, dur, num_samples, False)
 
-# source
-source = np.zeros(num_samples)
-f0 = 130
-fk = f0
-while fk < sample_rate/2:
-    source += np.cos(2.0*np.pi*fk * t)
-    fk += f0
-
-source *= sig.windows.hann(num_samples)
-
-# filter
-fft_size = (num_samples*2)-1
-f = np.linspace(-sample_rate/2, sample_rate/2, fft_size, False)
-formants = [400, 800]
-filter_spectrum = np.zeros(fft_size)
-for formant in formants:
-    filter_spectrum += gaussian(f, formant, 100)
-source_spectrum = np.fft.fft(source, fft_size)
-source_spectrum = np.fft.fftshift(source_spectrum)
-mixture_spectrum = filter_spectrum * source_spectrum
-mixture_spectrum = np.fft.fftshift(mixture_spectrum)
-mixture = np.real(np.fft.ifft(mixture_spectrum))
-
-mixture = normalize(mixture)
-sf.write("tmp.wav", mixture, samplerate=sample_rate)
+# analysis 
 
 plt.subplot(2, 1, 1)
 plt.plot(mixture)
