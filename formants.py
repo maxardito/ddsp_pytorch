@@ -2,6 +2,8 @@ import numpy as np
 import scipy.signal as sig
 import matplotlib.pyplot as plt
 import soundfile as sf
+import opensmile
+import pandas as pd
 
 """
 Implementation of the CheapTrick spectral smoothing algorithm used for formant extraction.
@@ -50,44 +52,33 @@ def source_filter_model(t, f0=130, formants=[400, 800]):
     return mixture 
 
 sample_rate = 16000
-dur = 0.3
+dur = 2
 num_samples = int(dur * sample_rate)
 t = np.linspace(0, dur, num_samples, False)
 
 # source audio
 f0 = 130
-formants = [400]
+formants = [400, 8000, 1500]
 signal = source_filter_model(t, f0=f0, formants=formants)
 
 # analysis 
-T0 = 1/f0
+# smile = opensmile.Smile(
+#     feature_set=opensmile.FeatureSet.ComParE_2016,
+#     feature_level=opensmile.FeatureLevel.Functionals,
+# )
+smile = opensmile.Smile(
+    feature_set=opensmile.FeatureSet.GeMAPSv01b,
+    feature_level=opensmile.FeatureLevel.LowLevelDescriptors,
+)
+smile.process_signal(
+    signal,
+    sample_rate
+)
 
-q0 = 1.18
-q1 = -0.09
+data = smile.process_signal(signal, sample_rate)
 
-fft_size = len(signal)
-signal_spectrum = np.fft.fft(signal, fft_size)
-signal_spectrum = signal_spectrum[:(len(signal_spectrum)//2)]
-signal_power_spectrum = np.power(signal_spectrum, 2)
-signal_cepstrum = np.fft.ifft(np.log(signal_power_spectrum))
-quefrency = np.linspace(0, dur, len(signal_cepstrum), False)
-# quefrency = np.linspace(-dur/2, dur/2, num_samples, False)
-sinc_lifter = np.zeros(len(quefrency))
+centerformantfreqs = ['F1frequency_sma3nz', 'F2frequency_sma3nz', 'F3frequency_sma3nz']
+formant_df = data[centerformantfreqs]
 
-j = 0
-for tau in quefrency:
-    if tau != 0:
-        sinc_lifter[j] = np.sin(np.pi * f0 * tau) / (np.pi * f0 * tau)
-    else:
-        sinc_lifter[j] = 0
-    j+=1
-
-cos_lifter = q0 + 2.0*q1*np.cos(2*np.pi * quefrency / T0)
-
-tmp = np.zeros(fft_size, dtype=np.complex128)
-tmp[:len(signal_spectrum)] = sinc_lifter * cos_lifter * signal_cepstrum
-tmp = np.fft.fftshift(tmp)
-estimation = np.exp(np.fft.fft(tmp))
-
-plt.plot(np.abs(estimation))
-plt.show()
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+    print(formant_df)
