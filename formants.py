@@ -51,7 +51,7 @@ def source_filter_model(t, f0=130, formants=[400, 800]):
 
     return mixture 
 
-sample_rate = 16000
+sample_rate = 32000
 dur = 2
 num_samples = int(dur * sample_rate)
 t = np.linspace(0, dur, num_samples, False)
@@ -82,3 +82,10 @@ formant_df = data[centerformantfreqs]
 
 with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
     print(formant_df)
+
+
+signal_spectrum = np.fft.fft(signal)
+signal_spectrum = signal_spectrum[:len(signal_spectrum)//2]
+signal_spectrum = 20*np.log10(np.abs(signal_spectrum))
+plt.plot(signal_spectrum)
+plt.show()
