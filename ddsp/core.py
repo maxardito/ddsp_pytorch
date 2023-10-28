@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.fft as fft
+import crepe
 import numpy as np
 import librosa as li
 import math
@@ -15,7 +16,7 @@ def mean_std_loudness(dataset):
     mean = 0
     std = 0
     n = 0
-    for _, _, l in dataset:
+    for _, _, _, l in dataset:
         n += 1
         mean += (l.mean().item() - mean) / n
         std += (l.std().item() - std) / n
@@ -77,6 +78,7 @@ def scale_function(x):
 
 
 def extract_loudness(signal, block_size, n_fft=2048):
+    length = signal.shape[-1] // block_size
     S = li.stft(
         signal,
         n_fft=n_fft,
@@ -92,10 +94,41 @@ def extract_loudness(signal, block_size, n_fft=2048):
 
     S = np.mean(S, 0)[..., :-1]
 
+    if S.shape[-1] != length:
+        S = np.interp(
+            np.linspace(0, 1, length, endpoint=False),
+            np.linspace(0, 1, S.shape[-1], endpoint=False),
+            S,
+        )
+
     return S
 
 
+def extract_pitch(signal, sampling_rate, block_size):
+    length = signal.shape[-1] // block_size
+    f0 = crepe.predict(
+        signal,
+        sampling_rate,
+        step_size=int(1000 * block_size / sampling_rate),
+        verbose=1,
+        center=True,
+        viterbi=True,
+    )
+
+    f0 = f0[1].reshape(-1)[:-1]
+
+    if f0.shape[-1] != length:
+        f0 = np.interp(
+            np.linspace(0, 1, length, endpoint=False),
+            np.linspace(0, 1, f0.shape[-1], endpoint=False),
+            f0,
+        )
+
+    return f0
+
+
 def extract_centroid(signal, sampling_rate, block_size, n_fft=2048):
+    length = signal.shape[-1] // block_size
     c = li.feature.spectral_centroid(
         y=signal,
         sr=sampling_rate,
@@ -104,6 +137,13 @@ def extract_centroid(signal, sampling_rate, block_size, n_fft=2048):
     )
 
     c = c[0].reshape(-1)[:-1]
+
+    if c.shape[-1] != length:
+        c = np.interp(
+            np.linspace(0, 1, length, endpoint=False),
+            np.linspace(0, 1, c.shape[-1], endpoint=False),
+            c,
+        )
 
     return c
 
