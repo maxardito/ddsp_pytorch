@@ -2,7 +2,7 @@
 *DS_Store
 *__pycache__*
 export/*
-preprocessed/*
+preprocessed*/*
 models/*
 data
 *.wav

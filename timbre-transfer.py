@@ -15,10 +15,11 @@ def extract_features(
 ):
 
     p = extract_pitch(signal, sampling_rate, block_size)
-    c = extract_centroid(signal, sampling_rate, block_size)
+    # c = extract_centroid(signal, sampling_rate, block_size)
     l = extract_loudness(signal, block_size)
 
-    return p, c, l
+    # return p, c, l
+    return p, l
 
 
 def main():
@@ -36,27 +37,16 @@ def main():
     signal, sampling_rate = librosa.load(
         config["timbre_transfer"]["input_file"])
 
-    p, c, l = extract_features(signal, sampling_rate,
-                               config["model"]["block_size"])
+    # p, c, l = extract_features(signal, sampling_rate,
+    p, l = extract_features(signal, sampling_rate,
+                            config["model"]["block_size"])
 
     p = torch.tensor(p, dtype=torch.float).unsqueeze(0).unsqueeze(2)
-    c = torch.tensor(c, dtype=torch.float).unsqueeze(0).unsqueeze(2)
+    # c = torch.tensor(c, dtype=torch.float).unsqueeze(0).unsqueeze(2)
     l = torch.tensor(l, dtype=torch.float).unsqueeze(0).unsqueeze(2)
 
-    # Centroid experiments!
-    # Calculate the logarithmic frequencies
-    # log_start = np.log10(9000)
-    # log_end = np.log10(19000)
-    # log_frequencies = np.logspace(log_start, log_end, num=c.shape[1], endpoint=True, base=10.0)
-
-    # Reshape the frequencies to match the tensor shape
-    # log_frequencies = log_frequencies.reshape(c.shape)
-
-    # Replace the values in the tensor with the logarithmic frequencies
-    # c[:, :, :] = torch.tensor(log_frequencies,
-    #                           dtype=torch.float32).view(c.shape)
-
-    y = model(p, c, l)
+    # y = model(p, c, l)
+    y = model(p, l)
 
     audio = y.squeeze().detach().numpy()
 

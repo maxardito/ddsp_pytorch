@@ -1,4 +1,5 @@
 import yaml
+import sys
 import pathlib
 import librosa as li
 from ddsp.core import extract_loudness, extract_pitch, extract_centroid
@@ -14,6 +15,20 @@ def get_files(data_location, extension, **kwargs):
     return list(pathlib.Path(data_location).rglob(f"*.{extension}"))
 
 
+def set_fixed_pitch(file_name):
+    parts = file_name.split('_')
+    pitch = 0
+    if len(parts) >= 2:
+        file_number = parts[2].split('.')[0]
+        # Differentiate each synth's range from the file names
+        if int(parts[1][-1]) == 1:
+            pitch = 20 + ((float(file_number) / 255) * 780)
+        else:
+            pitch = 500 + ((float(file_number) / 255) * 1500)
+    pitch_frame = np.ones(551) * pitch
+    return pitch_frame
+
+
 def preprocess(f, sampling_rate, block_size, signal_length, oneshot, **kwargs):
     x, _ = li.load(f)
     N = (signal_length - len(x) % signal_length) % signal_length
@@ -22,16 +37,18 @@ def preprocess(f, sampling_rate, block_size, signal_length, oneshot, **kwargs):
     if oneshot:
         x = x[..., :signal_length]
 
-    pitch = extract_pitch(x, sampling_rate, block_size)
-    centroid = extract_centroid(x, sampling_rate, block_size)
+    # pitch = extract_pitch(x, sampling_rate, block_size)
+    pitch = set_fixed_pitch(str(f))
+    # centroid = extract_centroid(x, sampling_rate, block_size)
     loudness = extract_loudness(x, block_size)
 
     x = x.reshape(-1, signal_length)
     pitch = pitch.reshape(x.shape[0], -1)
-    centroid = centroid.reshape(x.shape[0], -1)
+    # centroid = centroid.reshape(x.shape[0], -1)
     loudness = loudness.reshape(x.shape[0], -1)
 
-    return x, pitch, centroid, loudness
+    # return x, pitch, centroid, loudness
+    return x, pitch, loudness
 
 
 class Dataset(torch.utils.data.Dataset):
@@ -40,7 +57,7 @@ class Dataset(torch.utils.data.Dataset):
         super().__init__()
         self.signals = np.load(path.join(out_dir, "signals.npy"))
         self.pitchs = np.load(path.join(out_dir, "pitchs.npy"))
-        self.centroids = np.load(path.join(out_dir, "centroids.npy"))
+        # self.centroids = np.load(path.join(out_dir, "centroids.npy"))
         self.loudness = np.load(path.join(out_dir, "loudness.npy"))
 
     def __len__(self):
@@ -49,9 +66,10 @@ class Dataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         s = torch.from_numpy(self.signals[idx])
         p = torch.from_numpy(self.pitchs[idx])
-        c = torch.from_numpy(self.centroids[idx])
+        # c = torch.from_numpy(self.centroids[idx])
         l = torch.from_numpy(self.loudness[idx])
-        return s, p, c, l
+        # return s, p, c, l
+        return s, p, l
 
 
 def main():
@@ -67,21 +85,22 @@ def main():
 
     signals = []
     pitchs = []
-    centroids = []
+    # centroids = []
     loudness = []
 
     for f in pb:
         print("Processing file: ", str(f))
         pb.set_description(str(f))
-        x, p, c, l = preprocess(f, **config["preprocess"])
+        # x, p, c, l = preprocess(f, **config["preprocess"])
+        x, p, l = preprocess(f, **config["preprocess"])
         signals.append(x)
         pitchs.append(p)
-        centroids.append(c)
+        # centroids.append(c)
         loudness.append(l)
 
     signals = np.concatenate(signals, 0).astype(np.float32)
     pitchs = np.concatenate(pitchs, 0).astype(np.float32)
-    centroids = np.concatenate(centroids, 0).astype(np.float32)
+    # centroids = np.concatenate(centroids, 0).astype(np.float32)
     loudness = np.concatenate(loudness, 0).astype(np.float32)
 
     out_dir = config["preprocess"]["out_dir"]
@@ -89,7 +108,7 @@ def main():
 
     np.save(path.join(out_dir, "signals.npy"), signals)
     np.save(path.join(out_dir, "pitchs.npy"), pitchs)
-    np.save(path.join(out_dir, "centroids.npy"), centroids)
+    # np.save(path.join(out_dir, "centroids.npy"), centroids)
     np.save(path.join(out_dir, "loudness.npy"), loudness)
 
 

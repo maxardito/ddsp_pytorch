@@ -1,5 +1,5 @@
 data:
-  data_location: ./data
+  data_location: ./data/jtfs_2
   extension: wav
 model:
   block_size: 160
@@ -10,12 +10,12 @@ model:
 preprocess:
   block_size: 160
   oneshot: false
-  out_dir: ./preprocessed/
+  out_dir: ./preprocessed_2/
   sampling_rate: 44100
-  signal_length: 64000
+  signal_length: 88200
 train:
-  batch: 1
-  name: rhodes
+  batch: 16
+  name: jtfs
   overlap: 0.75
   scales:
     - 4096
@@ -24,10 +24,10 @@ train:
     - 512
     - 256
     - 128
-  steps: 10
+  steps: 10000
   start_lr: 0.001
   stop_lr: 0.0001
   decay: 400000
 timbre_transfer:
   input_file: "/home/maxwell/donuts/DSP/chirp.wav"
-  model: "./export/ddsp_rhodes_pretrained.ts"
+  model: "./export/ddsp_jtfs_pretrained.ts"

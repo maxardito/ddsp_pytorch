@@ -67,15 +67,17 @@ def main():
     epochs = int(np.ceil(config["train"]["steps"] / len(dataloader)))
 
     for e in tqdm(range(epochs)):
-        for s, p, c, l in dataloader:
+        # for s, p, c, l in dataloader:
+        for s, p, l in dataloader:
             s = s.to(device)
             p = p.unsqueeze(-1).to(device)
-            c = c.unsqueeze(-1).to(device)
+            # c = c.unsqueeze(-1).to(device)
             l = l.unsqueeze(-1).to(device)
 
             l = (l - mean_loudness) / std_loudness
 
-            y = model(p, c, l).squeeze(-1)
+            # y = model(p, c, l).squeeze(-1)
+            y = model(p, l).squeeze(-1)
 
             ori_stft = multiscale_fft(
                 s,
